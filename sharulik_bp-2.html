@@ -84,11 +84,11 @@
     try {
       const q = query(
         collection(db, 'readings'),
-        where('uid', '==', currentUser.uid),
-        orderBy('datetime', 'asc')
+        where('uid', '==', currentUser.uid)
       );
       const snap = await getDocs(q);
       entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      entries.sort((a,b) => a.datetime.localeCompare(b.datetime));
       render();
     } catch(e) {
       console.error(e);
