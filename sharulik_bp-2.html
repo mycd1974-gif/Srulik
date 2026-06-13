@@ -654,9 +654,11 @@ function clearAll() {
 function exportExcel() {
   if (entries.length === 0) { showToast('⚠️ אין מדידות לייצוא'); return; }
 
+  const exportDate = new Date().toLocaleDateString('he-IL');
+
   const wsData = [
-    ['Blood Pressure Log – Sharulik'],
-    ['Exported:', new Date().toLocaleDateString('he-IL')],
+    ['שם:', 'שרוליק אלכסנדרון'],
+    ['תאריך הפקה:', exportDate],
     [],
     ['DATE', 'TIME', 'SYS (mmHg)', 'DIA (mmHg)', 'HR (bpm)', 'REMARKS']
   ];
@@ -665,28 +667,25 @@ function exportExcel() {
     wsData.push([e.date, e.time, e.sys, e.dia, e.hr, e.remarks || '']);
   });
 
-  // summary section
   const sysList = entries.map(e => e.sys);
   const diaList = entries.map(e => e.dia);
   const hrList  = entries.map(e => e.hr);
+
   wsData.push([]);
-  wsData.push(['SUMMARY', '', 'SYS avg', 'DIA avg', 'HR avg', '']);
-  wsData.push(['', '', avg(sysList), avg(diaList), avg(hrList), '']);
-  wsData.push(['', '', 'SYS max', 'DIA max', 'HR max', '']);
-  wsData.push(['', '', Math.max(...sysList), Math.max(...diaList), Math.max(...hrList), '']);
-  wsData.push(['', '', 'SYS min', 'DIA min', 'HR min', '']);
-  wsData.push(['', '', Math.min(...sysList), Math.min(...diaList), Math.min(...hrList), '']);
+  wsData.push(['', '', 'SYS (mmHg)', 'DIA (mmHg)', 'HR (bpm)', '']);
+  wsData.push(['ממוצע', '', avg(sysList), avg(diaList), avg(hrList), '']);
+  wsData.push(['מקסימום', '', Math.max(...sysList), Math.max(...diaList), Math.max(...hrList), '']);
+  wsData.push(['מינימום', '', Math.min(...sysList), Math.min(...diaList), Math.min(...hrList), '']);
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  // column widths
   ws['!cols'] = [
-    {wch:14},{wch:8},{wch:14},{wch:14},{wch:10},{wch:35}
+    {wch:16},{wch:12},{wch:14},{wch:14},{wch:12},{wch:36}
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, 'BP Log');
-  XLSX.writeFile(wb, `לחץ_דם_שרוליק_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.utils.book_append_sheet(wb, ws, 'Blood Pressure Log');
+  XLSX.writeFile(wb, `לחץ_דם_שרוליק_אלכסנדרון_${new Date().toISOString().slice(0,10)}.xlsx`);
   showToast('📊 האקסל הורד בהצלחה!');
 }
 
