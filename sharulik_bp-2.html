@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -281,6 +281,18 @@
     document.getElementById('auth-login-form').style.display = 'block';
     document.getElementById('auth-register-form').style.display = 'none';
   };
+
+  // ── RESET PASSWORD ──
+  window.resetPassword = async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    if (!email) { showToast('⚠️ הכניסי קודם את האימייל שלך'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showToast('📧 נשלח אימייל לאיפוס סיסמה!');
+    } catch(e) {
+      showToast('❌ האימייל לא נמצא');
+    }
+  };
 </script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
@@ -419,6 +431,7 @@
       </div>
       <button class="btn-auth" onclick="login()">כניסה</button>
       <div class="auth-switch">עדיין אין חשבון? <a onclick="showRegister()">הרשמה</a></div>
+      <div class="auth-switch" style="margin-top:8px"><a onclick="resetPassword()">שכחתי סיסמה 🔑</a></div>
     </div>
 
     <!-- REGISTER -->
