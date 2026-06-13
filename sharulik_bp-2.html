@@ -200,8 +200,12 @@
     background: #fef2f2;
     color: var(--pulse);
     border: 1.5px solid #fecaca;
-    flex: 1;
+    flex: 0 0 auto;
+    font-size: 11px;
+    padding: 6px 10px;
+    opacity: 0.6;
   }
+  .btn-clear:hover { opacity: 1; }
   .btn-clear:hover { background: #fee2e2; }
 
   .action-row {
@@ -355,6 +359,55 @@
     border: 3px solid var(--sky); display: none; margin: 0 auto 8px;
   }
 </style>
+
+<link rel="manifest" href="data:application/json,{%22name%22:%22%D7%A9%D7%A8%D7%95%D7%9C%D7%99%D7%A7%20-%20%D7%9C%D7%97%D7%A5%20%D7%93%D7%9D%22,%22short_name%22:%22%D7%A9%D7%A8%D7%95%D7%9C%D7%99%D7%A7%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%231a3a5c%22,%22theme_color%22:%22%231a3a5c%22}">
+<link rel="apple-touch-icon" href="#" id="apple-icon">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="שרוליק BP">
+<meta name="theme-color" content="#1a3a5c">
+<script>
+// Generate icon canvas
+function generateIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  // background
+  ctx.fillStyle = '#1a3a5c';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, size * 0.22);
+  ctx.fill();
+  // heart
+  const s = size * 0.55;
+  const x = size * 0.5 - s/2;
+  const y = size * 0.18;
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath();
+  ctx.moveTo(x + s/2, y + s*0.3);
+  ctx.bezierCurveTo(x + s/2, y, x, y, x, y + s*0.3);
+  ctx.bezierCurveTo(x, y + s*0.6, x + s/2, y + s*0.85, x + s/2, y + s*0.85);
+  ctx.bezierCurveTo(x + s/2, y + s*0.85, x + s, y + s*0.6, x + s, y + s*0.3);
+  ctx.bezierCurveTo(x + s, y, x + s/2, y, x + s/2, y + s*0.3);
+  ctx.fill();
+  // S letter
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${size*0.38}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('S', size/2, size*0.72);
+  return c.toDataURL('image/png');
+}
+window.addEventListener('load', () => {
+  const icon = generateIcon(192);
+  const icon512 = generateIcon(512);
+  // apple touch icon
+  document.getElementById('apple-icon').href = icon;
+  // favicon
+  const link = document.createElement('link');
+  link.rel = 'icon'; link.type = 'image/png'; link.href = icon;
+  document.head.appendChild(link);
+});
+</script>
 </head>
 <body>
 
@@ -643,7 +696,8 @@ function deleteEntry(idx) {
 }
 
 function clearAll() {
-  if (!confirm('למחוק את כל המדידות?')) return;
+  if (!confirm('למחוק את כל המדידות?\nפעולה זו אינה ניתנת לביטול!')) return;
+  if (!confirm('⚠️ אתה בטוח לגמרי?\nכל ההיסטוריה תימחק לצמיתות!')) return;
   entries = [];
   save();
   render();
