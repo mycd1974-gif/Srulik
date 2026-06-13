@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מעקב לחץ דם – שרוליק</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:   #1a3a5c;
+    --sky:    #2980b9;
+    --ice:    #e8f4fd;
+    --pulse:  #e74c3c;
+    --mint:   #27ae60;
+    --warm:   #f39c12;
+    --bg:     #f0f6fb;
+    --white:  #ffffff;
+    --text:   #1a2530;
+    --muted:  #6b8294;
+    --border: #cce0f0;
+    --radius: 14px;
+  }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, #1d5280 100%);
+    color: white;
+    padding: 28px 32px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(26,58,92,0.3);
+  }
+
+  .header-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.4);
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+  }
+
+  .header-text h1 {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+  .header-text p {
+    font-size: 14px;
+    opacity: 0.75;
+    margin-top: 3px;
+  }
+
+  .pulse-icon {
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .heartbeat-svg {
+    width: 120px;
+    height: 40px;
+    opacity: 0.7;
+  }
+  .heartbeat-line {
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+    animation: draw 2s ease-in-out infinite;
+  }
+  @keyframes draw {
+    0%   { stroke-dashoffset: 300; }
+    60%  { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+
+  /* ── LAYOUT ── */
+  .main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 28px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 680px) {
+    .main { grid-template-columns: 1fr; }
+    .full-width { grid-column: 1; }
+  }
+
+  .full-width { grid-column: 1 / -1; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: 0 2px 12px rgba(26,58,92,0.08);
+    border: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title span { font-size: 18px; }
+
+  /* ── FORM ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input, select, textarea {
+    font-family: 'Heebo', sans-serif;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: var(--ice);
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--sky);
+    background: white;
+  }
+  textarea { resize: none; height: 60px; }
+
+  .btn {
+    font-family: 'Heebo', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+  .btn-primary {
+    background: var(--sky);
+    color: white;
+    width: 100%;
+    margin-top: 14px;
+    font-size: 16px;
+    padding: 14px;
+  }
+  .btn-primary:hover { background: var(--navy); transform: translateY(-1px); }
+
+  .btn-excel {
+    background: #1d6f42;
+    color: white;
+    flex: 1;
+  }
+  .btn-excel:hover { background: #155230; }
+
+  .btn-clear {
+    background: #fef2f2;
+    color: var(--pulse);
+    border: 1.5px solid #fecaca;
+    flex: 1;
+  }
+  .btn-clear:hover { background: #fee2e2; }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .stat-box {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 10px;
+    background: var(--ice);
+  }
+  .stat-box .stat-val {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .stat-box .stat-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .stat-box.sys .stat-val { color: var(--pulse); }
+  .stat-box.dia .stat-val { color: var(--sky); }
+  .stat-box.hr  .stat-val { color: var(--warm); }
+
+  /* ── STATUS BADGE ── */
+  .bp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 12px;
+  }
+  .status-normal  { background: #d1fae5; color: #065f46; }
+  .status-high1   { background: #fef3c7; color: #92400e; }
+  .status-high2   { background: #fee2e2; color: #991b1b; }
+  .status-low     { background: #ede9fe; color: #4c1d95; }
+  .status-empty   { background: var(--ice); color: var(--muted); }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead th {
+    background: var(--navy);
+    color: white;
+    padding: 10px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  thead th:first-child { border-radius: 0 8px 0 0; }
+  thead th:last-child  { border-radius: 8px 0 0 0; }
+
+  tbody tr:nth-child(even) { background: var(--ice); }
+  tbody tr:hover { background: #dbeafe44; }
+
+  tbody td {
+    padding: 9px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  td.remarks { text-align: right; font-size: 13px; color: var(--muted); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+  }
+  .del-btn:hover { opacity: 1; }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .empty-state .big { font-size: 36px; margin-bottom: 8px; }
+
+  /* ── CHART ── */
+  .chart-container { position: relative; height: 220px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--navy);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── BP INDICATOR DOT ── */
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot-sys { background: var(--pulse); }
+  .dot-dia { background: var(--sky); }
+
+  /* upload zone */
+  .photo-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--ice);
+  }
+  .photo-zone:hover { border-color: var(--sky); background: #e0f0fb; }
+  .photo-zone p { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  #photo-preview {
+    width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+    border: 3px solid var(--sky); display: none; margin: 0 auto 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-avatar" id="avatarCircle">❤️</div>
+  <div class="header-text">
+    <h1>שרוליק! 👋</h1>
+    <p>יומן לחץ דם אישי — מעקב קל ומסודר לרופא</p>
+  </div>
+  <div class="pulse-icon">
+    <svg class="heartbeat-svg" viewBox="0 0 120 40">
+      <polyline class="heartbeat-line"
+        fill="none" stroke="#e74c3c" stroke-width="2.5"
+        points="0,20 20,20 30,5 38,35 46,10 54,20 70,20 80,25 90,15 100,20 120,20"/>
+    </svg>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- FORM -->
+  <div class="card">
+    <div class="card-title"><span>📝</span> הוסף מדידה חדשה</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>תאריך</label>
+        <input type="date" id="inp-date">
+      </div>
+      <div class="field">
+        <label>שעה</label>
+        <input type="time" id="inp-time">
+      </div>
+      <div class="field">
+        <label>SYS (עליון)</label>
+        <input type="number" id="inp-sys" min="60" max="250" placeholder="120">
+      </div>
+      <div class="field">
+        <label>DIA (תחתון)</label>
+        <input type="number" id="inp-dia" min="40" max="150" placeholder="80">
+      </div>
+      <div class="field">
+        <label>HR (דופק)</label>
+        <input type="number" id="inp-hr" min="30" max="200" placeholder="70">
+      </div>
+      <div class="field">
+        <label>הערה</label>
+        <select id="inp-remark-preset">
+          <option value="">— בחר הערה —</option>
+          <option>לפני כדור לחץ דם</option>
+          <option>אחרי כדור לחץ דם</option>
+          <option>בבוקר בצום</option>
+          <option>אחרי ארוחה</option>
+          <option>אחרי פעילות גופנית</option>
+          <option>בעת מנוחה</option>
+          <option>אחר</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>הערה חופשית</label>
+        <textarea id="inp-note" placeholder="כתוב כאן הערה נוספת אם צריך..."></textarea>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addEntry()">💾 שמור מדידה</button>
+  </div>
+
+  <!-- STATUS + STATS -->
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <!-- LAST READING -->
+    <div class="card">
+      <div class="card-title"><span>💉</span> המדידה האחרונה</div>
+      <div class="stats-grid" id="last-stats">
+        <div class="stat-box sys"><div class="stat-val" id="last-sys">—</div><div class="stat-lbl">SYS mmHg</div></div>
+        <div class="stat-box dia"><div class="stat-val" id="last-dia">—</div><div class="stat-lbl">DIA mmHg</div></div>
+        <div class="stat-box hr" ><div class="stat-val" id="last-hr">—</div><div class="stat-lbl">HR bpm</div></div>
+      </div>
+      <div id="bp-status-badge" class="bp-status status-empty">⬜ אין מדידות עדיין</div>
+    </div>
+
+    <!-- PHOTO UPLOAD -->
+    <div class="card">
+      <div class="card-title"><span>📷</span> תמונת פרופיל</div>
+      <div class="photo-zone" onclick="document.getElementById('photo-input').click()">
+        <img id="photo-preview" src="" alt="תמונה">
+        <div style="font-size:28px">📸</div>
+        <p>לחץ להעלאת תמונה</p>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="loadPhoto(event)">
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="card full-width">
+    <div class="card-title"><span>📈</span> גרף לחץ דם לאורך זמן</div>
+    <div class="chart-container">
+      <canvas id="bp-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card full-width">
+    <div class="card-title"><span>📋</span> כל המדידות</div>
+    <div class="action-row">
+      <button class="btn btn-excel" onclick="exportExcel()">📊 יצא לאקסל לרופא</button>
+      <button class="btn btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
+    </div>
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead>
+          <tr>
+            <th>DATE</th>
+            <th>TIME</th>
+            <th>SYS</th>
+            <th>DIA</th>
+            <th>HR</th>
+            <th>REMARKS</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state">
+        <div class="big">🩺</div>
+        עדיין אין מדידות. הוסף את הראשונה!
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let entries = JSON.parse(localStorage.getItem('sharulik_bp') || '[]');
+let chart = null;
+
+// ── INIT ──
+window.onload = () => {
+  const now = new Date();
+  document.getElementById('inp-date').value = now.toISOString().slice(0,10);
+  document.getElementById('inp-time').value = now.toTimeString().slice(0,5);
+  // load saved photo
+  const savedPhoto = localStorage.getItem('sharulik_photo');
+  if (savedPhoto) applyPhoto(savedPhoto);
+  render();
+};
+
+// ── ADD ENTRY ──
+function addEntry() {
+  const date    = document.getElementById('inp-date').value;
+  const time    = document.getElementById('inp-time').value;
+  const sys     = parseInt(document.getElementById('inp-sys').value);
+  const dia     = parseInt(document.getElementById('inp-dia').value);
+  const hr      = parseInt(document.getElementById('inp-hr').value);
+  const preset  = document.getElementById('inp-remark-preset').value;
+  const note    = document.getElementById('inp-note').value.trim();
+
+  if (!date || !time || !sys || !dia || !hr) {
+    showToast('⚠️ אנא מלא תאריך, שעה, SYS, DIA ו-HR');
+    return;
+  }
+  const remarks = [preset, note].filter(Boolean).join(' | ');
+  entries.push({ date, time, sys, dia, hr, remarks });
+  entries.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+  save();
+  render();
+  // clear numeric fields
+  ['inp-sys','inp-dia','inp-hr','inp-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-remark-preset').value = '';
+  showToast('✅ המדידה נשמרה!');
+}
+
+// ── RENDER ──
+function render() {
+  renderTable();
+  renderStats();
+  renderChart();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+  tbody.innerHTML = '';
+  if (entries.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  [...entries].reverse().forEach((e, ri) => {
+    const idx = entries.length - 1 - ri;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(e.date)}</td>
+      <td>${e.time}</td>
+      <td style="font-weight:700;color:#e74c3c">${e.sys}</td>
+      <td style="font-weight:700;color:#2980b9">${e.dia}</td>
+      <td style="font-weight:700;color:#f39c12">${e.hr}</td>
+      <td class="remarks">${e.remarks || '—'}</td>
+      <td><button class="del-btn" onclick="deleteEntry(${idx})" title="מחק">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderStats() {
+  if (entries.length === 0) {
+    document.getElementById('last-sys').textContent = '—';
+    document.getElementById('last-dia').textContent = '—';
+    document.getElementById('last-hr').textContent  = '—';
+    setBadge('empty', '⬜ אין מדידות עדיין');
+    return;
+  }
+  const last = entries[entries.length - 1];
+  document.getElementById('last-sys').textContent = last.sys;
+  document.getElementById('last-dia').textContent = last.dia;
+  document.getElementById('last-hr').textContent  = last.hr;
+  // classify
+  const { cls, label } = classifyBP(last.sys, last.dia);
+  setBadge(cls, label);
+}
+
+function setBadge(cls, label) {
+  const b = document.getElementById('bp-status-badge');
+  b.className = 'bp-status';
+  b.classList.add('status-' + cls);
+  b.textContent = label;
+}
+
+function classifyBP(sys, dia) {
+  if (sys < 90 || dia < 60)  return { cls: 'low',    label: '🟣 לחץ דם נמוך' };
+  if (sys < 120 && dia < 80) return { cls: 'normal', label: '🟢 לחץ דם תקין' };
+  if (sys < 130 && dia < 80) return { cls: 'high1',  label: '🟡 גבוה – שלב 1' };
+  if (sys < 140 || dia < 90) return { cls: 'high1',  label: '🟡 גבוה – שלב 2' };
+  return                             { cls: 'high2',  label: '🔴 גבוה מאוד – פנה לרופא' };
+}
+
+function renderChart() {
+  const ctx = document.getElementById('bp-chart').getContext('2d');
+  if (chart) chart.destroy();
+  if (entries.length === 0) return;
+  const labels = entries.map(e => `${formatDate(e.date)} ${e.time}`);
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'SYS',
+          data: entries.map(e => e.sys),
+          borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)',
+          borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#e74c3c', tension: 0.3
+        },
+        {
+          label: 'DIA',
+          data: entries.map(e => e.dia),
+          borderColor: '#2980b9', backgroundColor: 'rgba(41,128,185,0.08)',
+          borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#2980b9', tension: 0.3
+        },
+        {
+          label: 'HR',
+          data: entries.map(e => e.hr),
+          borderColor: '#f39c12', backgroundColor: 'rgba(243,156,18,0.07)',
+          borderWidth: 1.5, borderDash: [5,3], pointRadius: 4, pointBackgroundColor: '#f39c12', tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'Heebo', size: 13 }, color: '#1a2530' } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 11 }, maxRotation: 35 } },
+        y: { min: 40, ticks: { font: { size: 12 } } }
+      }
+    }
+  });
+}
+
+// ── DELETE ──
+function deleteEntry(idx) {
+  if (!confirm('למחוק מדידה זו?')) return;
+  entries.splice(idx, 1);
+  save();
+  render();
+  showToast('🗑️ מדידה נמחקה');
+}
+
+function clearAll() {
+  if (!confirm('למחוק את כל המדידות?')) return;
+  entries = [];
+  save();
+  render();
+  showToast('🗑️ כל המדידות נמחקו');
+}
+
+// ── EXCEL EXPORT ──
+function exportExcel() {
+  if (entries.length === 0) { showToast('⚠️ אין מדידות לייצוא'); return; }
+
+  const wsData = [
+    ['Blood Pressure Log – Sharulik'],
+    ['Exported:', new Date().toLocaleDateString('he-IL')],
+    [],
+    ['DATE', 'TIME', 'SYS (mmHg)', 'DIA (mmHg)', 'HR (bpm)', 'REMARKS']
+  ];
+
+  entries.forEach(e => {
+    wsData.push([e.date, e.time, e.sys, e.dia, e.hr, e.remarks || '']);
+  });
+
+  // summary section
+  const sysList = entries.map(e => e.sys);
+  const diaList = entries.map(e => e.dia);
+  const hrList  = entries.map(e => e.hr);
+  wsData.push([]);
+  wsData.push(['SUMMARY', '', 'SYS avg', 'DIA avg', 'HR avg', '']);
+  wsData.push(['', '', avg(sysList), avg(diaList), avg(hrList), '']);
+  wsData.push(['', '', 'SYS max', 'DIA max', 'HR max', '']);
+  wsData.push(['', '', Math.max(...sysList), Math.max(...diaList), Math.max(...hrList), '']);
+  wsData.push(['', '', 'SYS min', 'DIA min', 'HR min', '']);
+  wsData.push(['', '', Math.min(...sysList), Math.min(...diaList), Math.min(...hrList), '']);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // column widths
+  ws['!cols'] = [
+    {wch:14},{wch:8},{wch:14},{wch:14},{wch:10},{wch:35}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'BP Log');
+  XLSX.writeFile(wb, `לחץ_דם_שרוליק_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('📊 האקסל הורד בהצלחה!');
+}
+
+function avg(arr) {
+  return Math.round(arr.reduce((a,b) => a+b, 0) / arr.length);
+}
+
+// ── PHOTO ──
+function loadPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    localStorage.setItem('sharulik_photo', data);
+    applyPhoto(data);
+    showToast('📸 תמונה נשמרה!');
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyPhoto(src) {
+  const preview = document.getElementById('photo-preview');
+  preview.src = src;
+  preview.style.display = 'block';
+  // also update header avatar
+  const avatar = document.getElementById('avatarCircle');
+  avatar.innerHTML = `<img src="${src}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;">`;
+}
+
+// ── HELPERS ──
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,dy] = d.split('-');
+  return `${dy}/${m}/${y.slice(2)}`;
+}
+
+function save() {
+  localStorage.setItem('sharulik_bp', JSON.stringify(entries));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
